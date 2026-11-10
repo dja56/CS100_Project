@@ -14,6 +14,10 @@ import trainer
 # - Player can double down on their first two cards
 # - Coach Mode can be turned on or off
 
+# TO DO
+# Surrender and Insurance
+
+
 ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10",
          "J", "Q", "K", "A"]
 suits = ["spade", "club", "heart", "diamond"]
