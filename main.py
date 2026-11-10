@@ -1,5 +1,4 @@
 import random
-
 import player
 import dealer
 import trainer
