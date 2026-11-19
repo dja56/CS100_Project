@@ -1,6 +1,6 @@
 """Trainer: beginner-friendly basic-strategy recommendations and explanations."""
 
-from player import calculate_hand, card_value
+import player
 
 
 def coach_advice(hand, dealer_up_card, can_split, can_double):
@@ -9,8 +9,8 @@ def coach_advice(hand, dealer_up_card, can_split, can_double):
     This is an instructional approximation, not a complete casino strategy chart.
     Returns (action, explanation).
     """
-    total, soft = calculate_hand(hand)
-    dealer_value = min(card_value(dealer_up_card), 10)
+    total, soft = player.calculate_hand(hand)
+    dealer_value = min(player.card_value(dealer_up_card), 10)
     dealer_rank = dealer_up_card["rank"]
 
     if len(hand) == 2 and can_split and hand[0]["rank"] == hand[1]["rank"]:

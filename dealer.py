@@ -3,7 +3,7 @@
 Rule: the dealer stands on all 17s, including soft 17.
 """
 
-from player import calculate_hand, format_card
+import player
 
 
 def deal_dealer_hand(deck):
@@ -13,7 +13,7 @@ def deal_dealer_hand(deck):
 
 def dealer_should_hit(dealer_hand):
     """The dealer hits until reaching 17 or higher."""
-    return calculate_hand(dealer_hand)[0] < 17
+    return player.calculate_hand(dealer_hand)[0] < 17
 
 
 def dealer_turn(deck, dealer_hand):
@@ -22,7 +22,7 @@ def dealer_turn(deck, dealer_hand):
     while dealer_should_hit(dealer_hand):
         new_card = deck.pop()
         dealer_hand.append(new_card)
-        print("Dealer draws:", format_card(new_card))
+        print("Dealer draws:", player.format_card(new_card))
 
-    total, soft = calculate_hand(dealer_hand)
+    total, soft = player.calculate_hand(dealer_hand)
     print("Dealer stands at", total, "(soft)" if soft else "")

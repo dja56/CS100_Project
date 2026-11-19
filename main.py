@@ -1,8 +1,6 @@
 import random
 import player
 import dealer
-import trainer
-import betting
 
 # Blackjack Trainer - Terminal Version
 # Rules:
@@ -83,76 +81,6 @@ def check_winner(player_hand, dealer_hand):
         return "lose"
     return "push"
 
-
-def get_player_action(can_split, can_double):
-    """Ask for an action and reject choices that are not currently allowed."""
-    while True:
-        choices = ["H", "S"]
-        prompt = "Choose [H]it or [S]tand"
-
-        if can_double:
-            choices.append("D")
-            prompt += ", [D]ouble down"
-        if can_split:
-            choices.append("P")
-            prompt += ", s[P]lit"
-
-        choice = input(prompt + ": ").strip().upper()
-        if choice in choices:
-            return choice
-
-        print("That action is not available. Please choose a listed action.")
-
-
-def play_player_hand(deck, hand, dealer_hand, hand_number, coach_enabled,
-                     allow_split=True, split_aces=False):
-    """Play one hand. Returns "split" if the player splits, otherwise whether it was doubled."""
-    first_action = True
-
-    while True:
-        display_cards(hand, dealer_hand, hide_dealer=True, hand_number=hand_number)
-        total = player.calculate_hand(hand)[0]
-
-        if total >= 21:
-            if total == 21:
-                print("You have 21.")
-            else:
-                print("You busted!")
-            return False
-
-        if split_aces:
-            print("Split Aces receive only one card. This hand is finished.")
-            return False
-
-        split_ok = player.can_split(hand, first_action, allow_split)
-        double_ok = player.can_double(hand, first_action)
-
-        if coach_enabled:
-            recommendation, explanation = trainer.coach_advice(
-                hand, dealer_hand[0], split_ok, double_ok
-            )
-            print("\nCoach recommends:", recommendation)
-            print(explanation)
-
-        action = get_player_action(split_ok, double_ok)
-
-        if action == "H":
-            new_card = player.hit(deck, hand)
-            print("You drew:", player.format_card(new_card))
-        elif action == "S":
-            print("You stand.")
-            return False
-        elif action == "D":
-            new_card = player.double_down(deck, hand)
-            print("You doubled down and drew:", player.format_card(new_card))
-            return True
-        elif action == "P":
-            # The caller handles the second hand created by a split.
-            return "split"
-
-        first_action = False
-
-
 def play_round(coach_enabled):
     """Run one complete round, including optional splitting."""
     deck, starting_hand, dealer_hand = initialize_game()
@@ -184,7 +112,7 @@ def play_round(coach_enabled):
     split_used = False
 
     while hand_number <= len(hands):
-        result = play_player_hand(
+        result = player.play_player_hand(
             deck,
             hands[hand_number - 1],
             dealer_hand,
