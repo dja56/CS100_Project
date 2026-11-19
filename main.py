@@ -2,6 +2,7 @@ import random
 import player
 import dealer
 import trainer
+import betting
 
 # Blackjack Trainer - Terminal Version
 # Rules:
@@ -15,7 +16,7 @@ import trainer
 # - Coach Mode can be turned on or off
 
 # TO DO
-# Surrender and Insurance
+# Surrender, Insurance, Betting
 
 
 ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10",
