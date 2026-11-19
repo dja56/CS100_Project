@@ -5,11 +5,12 @@ try:
 except ImportError as exc:
     raise SystemExit("Pygame is required. Install it with: python -m pip install pygame") from exc
 
-import dealer
 import main as game
-import player
+import gui_data as gd
+import cards
+import dealer
 import trainer
-
+import player
 
 WIDTH, HEIGHT = 1000, 700
 GREEN = (19, 102, 67)
@@ -57,8 +58,11 @@ class BlackjackGUI:
         self.round_result = None
         self.message = "Your turn."
         self.advice = ""
-        p_total = player.calculate_hand(hand)[0]
-        d_total = player.calculate_hand(self.dealer_hand)[0]
+        
+        p_total = cards.calculate_hand(hand)[0]
+        d_total = cards.calculate_hand(self.dealer_hand)[0]
+
+
         if len(hand) == 2 and (p_total == 21 or d_total == 21):
             if p_total == d_total:
                 self.finish_round("push", "Both have Blackjack. Push!")
@@ -85,21 +89,21 @@ class BlackjackGUI:
                 self.new_round()
             return
         hand = self.hands[self.active]
-        total = player.calculate_hand(hand)[0]
+        total = cards.calculate_hand(hand)[0]
         if total >= 21:
             self.advance_hand()
             return
         if action == "hit":
             card = player.hit(self.deck, hand)
-            self.message = f"Drew {player.format_card(card)}."
-            if player.calculate_hand(hand)[0] >= 21:
+            self.message = f"Drew {cards.format_card(card)}."
+            if cards.calculate_hand(hand)[0] >= 21:
                 self.advance_hand()
         elif action == "stand":
             self.message = "You stand."
             self.advance_hand()
         elif action == "double" and self.can_double():
             card = player.double_down(self.deck, hand)
-            self.message = f"Doubled down and drew {player.format_card(card)}."
+            self.message = f"Doubled down and drew {cards.format_card(card)}."
             self.advance_hand()
         elif action == "split" and self.can_split():
             self.split_used = True
@@ -134,7 +138,7 @@ class BlackjackGUI:
 
     def resolve_round(self):
         """Play the dealer's turn, score every player hand, and finish the round."""
-        if any(player.calculate_hand(h)[0] <= 21 for h in self.hands):
+        if any(cards.calculate_hand(h)[0] <= 21 for h in self.hands):
             while dealer.dealer_should_hit(self.dealer_hand):
                 self.dealer_hand.append(self.deck.pop())
         results = [game.check_winner(hand, self.dealer_hand) for hand in self.hands]
@@ -183,8 +187,8 @@ class BlackjackGUI:
                        GOLD if active else WHITE, self.font)
         for i, card in enumerate(hand):
             self.draw_card(card, x + i * card_pitch, y, hide_second and i == 1)
-        total = player.calculate_hand(hand)[0]
-        total_text = f"Total: {total if not hide_second else player.calculate_hand([hand[0]])[0]}"
+        total = cards.calculate_hand(hand)[0]
+        total_text = f"Total: {total if not hide_second else cards.calculate_hand([hand[0]])[0]}"
         total_x = x if total_below else x + len(hand) * card_pitch + 14
         total_y = y + 126 if total_below else y + 43
         self.draw_text(total_text, total_x, total_y, GOLD, self.font)
