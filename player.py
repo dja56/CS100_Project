@@ -1,37 +1,16 @@
+"""Player logic: the player's actions during a hand."""
+
+import cards
+import display
 import trainer
-import main
 
-
-"""Player logic: card values, hand totals, and the player's actions."""
-
-
-def card_value(card):
-    """Return the blackjack value of one card before Ace adjustment."""
-    rank = card["rank"]
-
-    if rank in ["J", "Q", "K"]:
-        return 10
-    if rank == "A":
-        return 11
-    return int(rank)
-
-
-def calculate_hand(hand):
-    """Return (total, soft), where soft means an Ace is currently counted as 11."""
-    total = sum(card_value(card) for card in hand)
-    aces = sum(1 for card in hand if card["rank"] == "A")
-
-    while total > 21 and aces > 0:
-        total -= 10
-        aces -= 1
-
-    # An Ace is soft if at least one Ace is still being counted as 11.
-    soft = aces > 0
-    return total, soft
-
-
-def format_card(card):
-    return card["rank"] + " of " + card["suit"]
+ACTION_NAMES = {
+    "H": trainer.HIT,
+    "S": trainer.STAND,
+    "D": trainer.DOUBLE,
+    "P": trainer.SPLIT,
+    "R": trainer.SURRENDER,
+}
 
 
 def can_split(hand, first_action=True, allow_split=True):
@@ -70,56 +49,76 @@ def split_hand(deck, hand):
     second_hand = [hand[1], deck.pop()]
     return first_hand, second_hand
 
+
 def play_player_hand(deck, hand, dealer_hand, hand_number, coach_enabled,
-                     allow_split=True, split_aces=False):
-    """Play one hand. Returns "split" if the player splits, otherwise whether it was doubled."""
+                     bet, chips_available, tracker=None,
+                     allow_split=True, allow_surrender=True):
+    """Play one hand.
+
+    chips_available is what the player can still wager beyond current bets
+    (needed to double or split). Returns one of:
+    "split", "double", "surrender", or "done" (stood, bust or 21).
+    """
     first_action = True
 
     while True:
-        main.display_cards(hand, dealer_hand, hide_dealer=True, hand_number=hand_number)
-        total = calculate_hand(hand)[0]
+        display.display_cards(hand, dealer_hand, hide_dealer=True,
+                              hand_number=hand_number, bet=bet)
+        total = cards.calculate_hand(hand)[0]
 
         if total >= 21:
             if total == 21:
                 print("You have 21.")
             else:
                 print("You busted!")
-            return False
+            return "done"
 
-        if split_aces:
-            print("Split Aces receive only one card. This hand is finished.")
-            return False
+        split_ok = can_split(hand, first_action, allow_split) and chips_available >= bet
+        double_ok = can_double(hand, first_action) and chips_available >= bet
+        surrender_ok = first_action and allow_surrender and len(hand) == 2
 
-        split_ok = can_split(hand, first_action, allow_split)
-        double_ok = can_double(hand, first_action)
+        recommendation, explanation = trainer.coach_advice(
+            hand, dealer_hand[0], split_ok, double_ok, surrender_ok
+        )
 
         if coach_enabled:
-            recommendation, explanation = trainer.coach_advice(
-                hand, dealer_hand[0], split_ok, double_ok
-            )
             print("\nCoach recommends:", recommendation)
             print(explanation)
 
-        action = get_player_action(split_ok, double_ok)
+        action = get_player_action(split_ok, double_ok, surrender_ok,
+                                   (recommendation, explanation))
+
+        if tracker is not None:
+            tracker.record(
+                trainer.describe_situation(hand, dealer_hand[0], split_ok),
+                ACTION_NAMES[action],
+                recommendation,
+            )
 
         if action == "H":
             new_card = hit(deck, hand)
-            print("You drew:", format_card(new_card))
+            print("You drew:", cards.format_card(new_card))
         elif action == "S":
             print("You stand.")
-            return False
+            return "done"
         elif action == "D":
             new_card = double_down(deck, hand)
-            print("You doubled down and drew:", format_card(new_card))
-            return True
+            print("You doubled down and drew:", cards.format_card(new_card))
+            return "double"
         elif action == "P":
             # The caller handles the second hand created by a split.
             return "split"
+        elif action == "R":
+            return "surrender"
 
         first_action = False
 
-def get_player_action(can_split, can_double):
-    """Ask for an action and reject choices that are not currently allowed."""
+
+def get_player_action(can_split, can_double, can_surrender, hint):
+    """Ask for an action and reject choices that are not currently allowed.
+
+    Typing ? shows the coach's hint without committing to anything.
+    """
     while True:
         choices = ["H", "S"]
         prompt = "Choose [H]it or [S]tand"
@@ -130,8 +129,15 @@ def get_player_action(can_split, can_double):
         if can_split:
             choices.append("P")
             prompt += ", s[P]lit"
+        if can_surrender:
+            choices.append("R")
+            prompt += ", su[R]render"
 
-        choice = input(prompt + ": ").strip().upper()
+        choice = input(prompt + " (? for a hint): ").strip().upper()
+        if choice == "?":
+            print("\nHint:", hint[0])
+            print(hint[1])
+            continue
         if choice in choices:
             return choice
 
